@@ -1,0 +1,31 @@
+{
+  "name": "predge-alexa-mcp",
+  "version": "0.1.0",
+  "description": "Self-hosted MCP server (Streamable HTTP) giving Alexa+ voice access to Predge settlement-risk and delivery-verdict tools, plus a simulated Alexa+ web demo on Amazon Bedrock.",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "smoke": "tsx scripts/smoke.ts",
+    "demo-check": "tsx scripts/demo-check.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1156.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulated Alexa+ x Predge MCP</title>
+<style>
+  :root { --bg:#0b1220; --panel:#111a2e; --line:#1f2c47; --ink:#e8eefc; --dim:#8da0c4; --cy:#00caff; --ok:#3ddc97; --warn:#ffb020; --bad:#ff5d6c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:radial-gradient(1200px 600px at 20% -10%, #14305a 0%, var(--bg) 60%); color:var(--ink); font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; min-height:100vh; }
+  header { display:flex; align-items:center; gap:14px; padding:18px 28px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; font-weight:650; letter-spacing:.2px; }
+  header .sub { color:var(--dim); font-size:13px; }
+  .badges { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+  .badge { border:1px solid var(--line); background:var(--panel); border-radius:999px; padding:4px 11px; font-size:12px; color:var(--dim); }
+  .badge b { color:var(--ink); font-weight:600; }
+  .badge.bedrock b { color:var(--ok); } .badge.fallback b { color:var(--warn); }
+  main { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:22px; padding:22px 28px; max-width:1300px; margin:0 auto; }
+  @media (max-width:900px){ main{ grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; }
+  .card h2 { margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:1.2px; color:var(--dim); font-weight:600; }
+  .stage { display:flex; flex-direction:column; align-items:center; gap:14px; padding:10px 0 6px; }
+  .ring { width:120px; height:120px; border-radius:50%; border:6px solid var(--cy); box-shadow:0 0 28px #00caff66, inset 0 0 22px #00caff44; transition:.25s; opacity:.55; }
+  .ring.listening { opacity:1; animation:pulse 1.1s ease-in-out infinite; }
+  .ring.thinking { opacity:1; border-color:#7aa8ff; animation:spin 1.2s linear infinite; border-top-color:transparent; }
+  .ring.speaking { opacity:1; animation:pulse .6s ease-in-out infinite; border-color:#5cf0c0; box-shadow:0 0 34px #5cf0c088; }
+  @keyframes pulse { 50% { transform:scale(1.08); } } @keyframes spin { to { transform:rotate(360deg); } }
+  .status { color:var(--dim); font-size:14px; min-height:20px; }
+  .row { display:flex; gap:10px; width:100%; }
+  input[type=text] { flex:1; background:#0c1527; color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:16px; outline:none; }
+  input[type=text]:focus { border-color:var(--cy); }
+  button { background:var(--cy); color:#001824; border:0; border-radius:12px; padding:12px 16px; font-weight:650; font-size:15px; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); font-weight:500; }
+  button:disabled { opacity:.5; cursor:default; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; width:100%; }
+  .chip { background:#0c1527; border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:7px 12px; font-size:13px; font-weight:450; }
+  .chip:hover { border-color:var(--cy); }
+  #log { display:flex; flex-direction:column; gap:10px; margin-top:14px; max-height:42vh; overflow:auto; }
+  .msg { padding:10px 14px; border-radius:14px; max-width:92%; }
+  .me { align-self:flex-end; background:#1b2b4d; } .bot { align-self:flex-start; background:#0f2a3a; border:1px solid #14455c; }
+  .tool { border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:10px; background:#0c1527; font-size:13px; }
+  .tool .name { color:var(--cy); font-family:ui-monospace,Menlo,monospace; font-weight:600; }
+  .tool .said { margin:6px 0; color:var(--ink); } .tool.err .name { color:var(--bad); }
+  pre { margin:6px 0 0; background:#070d19; border-radius:8px; padding:8px 10px; overflow:auto; max-height:170px; font-size:12px; color:#b8c7e6; }
+  details summary { cursor:pointer; color:var(--dim); font-size:12px; }
+  .job { font-size:13px; color:var(--dim); }
+  .job select { background:#0c1527; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:5px 8px; }
+  .foot { color:var(--dim); font-size:12px; padding:0 28px 26px; max-width:1300px; margin:0 auto; }
+  .empty { color:var(--dim); font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Simulated Alexa+ <span style="color:var(--cy)">x Predge MCP</span></h1>
+    <div class="sub">Speak or type. The agent calls a self-hosted MCP server (Streamable HTTP) backed by the live Predge API.</div>
+  </div>
+  <div class="badges">
+    <span class="badge" id="b-mcp">MCP <b>...</b></span>
+    <span class="badge" id="b-path">Agent <b>idle</b></span>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Alexa+</h2>
+    <div class="stage">
+      <div class="ring" id="ring"></div>
+      <div class="status" id="status">Tap the mic and talk, or type below.</div>
+      <div class="row">
+        <button id="mic" title="Speak">Speak</button>
+        <input type="text" id="text" placeholder="Alexa, is the Russia-Ukraine peace talks market safe to cash out?" autocomplete="off">
+        <button id="send" class="ghost">Send</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="job">Sample paid job in the assistant's memory:
+        <select id="job"><option value="broken">API call that came back empty (HTTP 502)</option><option value="ok">API call that delivered correctly</option></select>
+      </div>
+    </div>
+    <div id="log"></div>
+  </section>
+
+  <section class="card">
+    <h2>MCP tool calls (live)</h2>
+    <div id="tools"><div class="empty">Tool calls the agent makes to <code>/mcp</code> show up here, with the structured result.</div></div>
+  </section>
+</main>
+<div class="foot">Settlement information comes from the UMA oracle state and is not financial advice. Records are signed by Predge (ed25519) and can be verified offline. Voice uses your browser's Web Speech API; text input works everywhere.</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const ring = $("ring"), statusEl = $("status"), log = $("log"), tools = $("tools");
+let ctx = {};
+const JOBS = {
+  broken: { endpoint: "https://api.example-forecasts.com/v1/forecast", amount_usd: 0.25, delivery_status: 502, delivery_body: "", delivery_content_type: "text/html", expected_content_type: "application/json", required_fields: ["rows"], payer: "0xBuyerAgent", payee: "0xMerchant", merchant_id: "example-forecasts" },
+  ok: { endpoint: "https://api.example-forecasts.com/v1/forecast", amount_usd: 0.25, delivery_status: 200, delivery_body: "{\"rows\":[{\"day\":\"mon\",\"temp_c\":14}]}", delivery_content_type: "application/json", expected_content_type: "application/json", required_fields: ["rows"], payer: "0xBuyerAgent", payee: "0xMerchant", merchant_id: "example-forecasts" },
+};
+ctx.lastJob = JOBS.broken;
+$("job").onchange = (e) => { ctx.lastJob = JOBS[e.target.value]; };
+
+const SAMPLES = ["Alexa, is the Russia-Ukraine peace talks market safe to cash out?", "Alexa, what markets are in dispute right now?", "Alexa, did the work I paid for actually arrive?", "Alexa, verify that record", "Alexa, verify that record but tamper with it"];
+SAMPLES.forEach((s) => { const b = document.createElement("button"); b.className = "chip"; b.textContent = s.replace(/^Alexa, /, ""); b.onclick = () => ask(s); $("chips").appendChild(b); });
+
+fetch("/healthz").then((r) => r.json()).then((h) => { $("b-mcp").innerHTML = `MCP <b>${h.protocol}</b> · Streamable HTTP`; }).catch(() => {});
+
+function setState(s, msg) { ring.className = "ring " + (s || ""); statusEl.textContent = msg || ""; }
+function bubble(cls, text) { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight; }
+function showTools(calls) {
+  tools.innerHTML = "";
+  if (!calls.length) { tools.innerHTML = '<div class="empty">No tool call for this question.</div>'; return; }
+  for (const c of calls) {
+    const d = document.createElement("div"); d.className = "tool" + (c.isError ? " err" : "");
+    const args = JSON.stringify(c.args, null, 1);
+    d.innerHTML = `<div><span class="name">tools/call ${c.name}</span></div><div class="said"></div>
+      <details><summary>arguments</summary><pre></pre></details><details open><summary>structuredContent</summary><pre class="data"></pre></details>`;
+    d.querySelector(".said").textContent = c.text;
+    d.querySelectorAll("pre")[0].textContent = args;
+    d.querySelector(".data").textContent = JSON.stringify(c.data, null, 1);
+    tools.appendChild(d);
+  }
+}
+
+let voice;
+function pickVoice() { const vs = speechSynthesis.getVoices(); voice = vs.find((v) => /en[-_](US|GB)/i.test(v.lang) && /samantha|ava|allison|google|female|zira/i.test(v.name)) || vs.find((v) => /^en/i.test(v.lang)); }
+if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text) {
+  return new Promise((res) => {
+    if (!("speechSynthesis" in window)) return res();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.rate = 1.03;
+    u.onend = u.onerror = () => res();
+    setState("speaking", "Speaking..."); speechSynthesis.speak(u);
+  });
+}
+
+let busy = false;
+async function ask(utterance) {
+  utterance = utterance.trim(); if (!utterance || busy) return;
+  busy = true; $("send").disabled = true;
+  bubble("me", utterance); $("text").value = "";
+  setState("thinking", "Thinking...");
+  try {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ utterance, ctx }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || d.error);
+    ctx = { ...d.ctx, lastJob: ctx.lastJob };
+    const bp = $("b-path");
+    bp.className = "badge " + d.path;
+    bp.innerHTML = d.path === "bedrock" ? `Agent <b>Amazon Bedrock</b> · ${d.model}` : `Agent <b>fallback router</b>`;
+    bp.title = d.reason || "";
+    bubble("bot", d.answer); showTools(d.toolCalls || []);
+    await speak(d.answer);
+  } catch (e) { bubble("bot", "Sorry, something went wrong: " + e.message); }
+  busy = false; $("send").disabled = false; setState("", "Tap the mic and talk, or type below.");
+}
+
+$("send").onclick = () => ask($("text").value);
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter") ask($("text").value); });
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) { $("mic").disabled = true; $("mic").title = "Speech recognition is not available in this browser; type instead."; statusEl.textContent = "Voice input needs Chrome or Safari. Typing works everywhere."; }
+else {
+  const rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false;
+  let finalText = "";
+  rec.onstart = () => { finalText = ""; setState("listening", "Listening..."); };
+  rec.onresult = (e) => { let t = ""; for (const r of e.results) t += r[0].transcript; finalText = t; $("text").value = t; if (e.results[e.results.length - 1].isFinal) { } };
+  rec.onerror = (e) => setState("", "Mic: " + e.error + ". You can type instead.");
+  rec.onend = () => { if (finalText.trim()) ask(finalText); else if (ring.classList.contains("listening")) setState("", "Didn't catch that."); };
+  $("mic").onclick = () => { speechSynthesis.cancel(); try { rec.start(); } catch { rec.stop(); } };
+}
+</script>
+</body>
+</html>
