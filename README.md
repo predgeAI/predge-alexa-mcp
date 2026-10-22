@@ -91,7 +91,7 @@ Input `limit` (default 5), `topic` (optional words). Open disputes newest first,
 Flat input (endpoint, amount, delivered status/body, optional expected content type, required fields, latency, hash) mapped to the documented `POST /v1/verdicts` body (`/v1/verdicts/large` at $1 or more). Returns `delivered`, `not_delivered` or `inconclusive`, the failed checks in plain words, a refund **recommendation** (Predge does not move money in this version) and `verify_url`. The checks are deterministic and the verdict is only as true as the evidence supplied. Needs `PREDGE_KEY`.
 
 ### `verify_record`
-Input one of `market`, `verdict_id` or `record`. Downloads Predge's published key list, rebuilds nothing from the server's word: it checks the ed25519 signature over `attestation.canonical` with `node:crypto`, checks that the readable `payload` canonicalizes to the signed text, and reads the key's status. Results: `authentic`, `key_revoked`, `invalid_signature`, `unknown_key`, `malformed`. `demo_tamper: true` flips one character first, to show tampering is caught (demo only).
+Input one of `market`, `verdict_id` or `record`. Downloads Predge's published key list, then checks the ed25519 signature over `attestation.canonical` with `node:crypto`, checks that the readable `payload` canonicalizes to the signed text, and reads the key's status. Results: `authentic`, `key_revoked`, `invalid_signature`, `unknown_key`, `malformed`. `demo_tamper: true` flips one character first, to show tampering is caught (demo only).
 
 ## How Alexa+ would connect
 
