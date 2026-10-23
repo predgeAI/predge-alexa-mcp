@@ -1,11 +1,13 @@
 {
   "name": "predge-alexa-mcp",
   "version": "0.1.0",
-  "description": "Self-hosted MCP server (Streamable HTTP) giving Alexa+ voice access to Predge settlement-risk and delivery-verdict tools, plus a simulated Alexa+ web demo on Amazon Bedrock.",
+  "description": "Kept: did Alexa get what you paid for? A self-hosted MCP server that records every purchase an agent makes, checks the merchant confirmation against what was promised, and returns a signed verdict that verifies offline. Simulated Alexa+ demo on Amazon Bedrock, DynamoDB and Polly.",
   "license": "MIT",
   "type": "module",
   "private": false,
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
@@ -17,6 +19,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1156.0",
+    "@aws-sdk/client-dynamodb": "^3.1156.0",
+    "@aws-sdk/client-polly": "^3.1156.0",
+    "@aws-sdk/lib-dynamodb": "^3.1156.0",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "express": "^5.3.0",
     "zod": "^4.6.7"

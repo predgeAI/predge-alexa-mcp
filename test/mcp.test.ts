@@ -9,20 +9,20 @@ import { ACTIVE, DISPUTED_RECORD, json, mockFetch } from "./helpers.js";
 let srv: Server; let url: string;
 beforeAll(async () => {
   const { f } = mockFetch({ "GET /v1/settlement-risk/active": () => json(ACTIVE), "GET /v1/settlement-risk/1": () => json(DISPUTED_RECORD) });
-  const { app } = createApp({ env: { PORT: "0" } as any, port: 0, fetch: f });
+  const { app } = createApp({ env: { PORT: "0", ENABLE_MARKET_TOOLS: "1", KEPT_STORE: "memory" } as any, port: 0, fetch: f });
   await new Promise<void>((r) => { srv = app.listen(0, () => r()); });
   url = `http://127.0.0.1:${(srv.address() as any).port}/mcp`;
 });
 afterAll(() => { srv.close(); });
 
 describe("MCP over Streamable HTTP", () => {
-  it("negotiates spec 2025-11-25 and lists the four tools", async () => {
+  it("negotiates spec 2025-11-25 and lists the Kept tools plus the flagged market tools", async () => {
     expect(LATEST_PROTOCOL_VERSION).toBe("2025-11-25");
     const c = new Client({ name: "t", version: "1" });
     await c.connect(new StreamableHTTPClientTransport(new URL(url)));
-    expect(c.getServerVersion()?.name).toBe("predge-alexa-mcp");
+    expect(c.getServerVersion()?.name).toBe("kept");
     const names = (await c.listTools()).tools.map((t) => t.name).sort();
-    expect(names).toEqual(["active_disputes", "check_market_settlement", "verify_delivery", "verify_record"]);
+    expect(names).toEqual(["active_disputes", "check_market_settlement", "check_purchase", "draft_refund_request", "list_purchases", "record_purchase", "verify_delivery", "verify_receipt", "verify_record"]);
     await c.close();
   });
   it("tools/call returns speakable text and structuredContent", async () => {
