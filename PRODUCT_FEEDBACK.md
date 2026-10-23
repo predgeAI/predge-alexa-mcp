@@ -20,7 +20,17 @@ Feedback for the teams behind the technologies used, from building a voice-first
 - **Friction:** inference profile ids versus model ids, and per-account model access, are easy to get wrong; a clearer `AccessDeniedException` message that names the exact switch would save time.
 - **Friction:** `aws login` sessions expire and cannot be refreshed non-interactively; an SDK warning when a session is close to expiry would help long-running local demos.
 
+## MCP Apps and elicitation
+
+- **Good:** `ui://` resources plus `_meta.ui.resourceUri` are the right shape for a receipt card; the same server works with and without a host that renders them.
+- **Wish:** a reference host page and a compatibility table (see FRICTION_LOG 5). Elicitation docs should say it needs sessions (FRICTION_LOG 4).
+
+## Amazon DynamoDB and Polly
+
+- **Good:** an on-demand table keyed by household was one CLI command and free-tier scale; Polly neural voices make the demo narration usable without extra tooling.
+- **Wish:** Polly voices flagged for conversational/assistant use, with SSML defaults for short confirmations.
+
 ## Predge API (our own feedback to ourselves)
 
-- Settlement records have no free-text market search; spoken-name lookup works only through the 30-day dispute list. A search route would remove the need for the resolver.
-- A "speakable" summary field on the record would let clients avoid re-deriving the sentence from flags.
+- A "speakable" summary field on a verdict would let clients avoid re-deriving the sentence from checks and reason codes.
+- The verdict job spec could accept a plain list of required fields without an endpoint, for purchases that have no URL.
